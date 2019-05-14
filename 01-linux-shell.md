@@ -2,8 +2,64 @@
 
 ## 1. Lý thuyết
 
-### 1.1 Toán tử
+### 1.1 Một vài khái niệm
 
+#### 1.1.1. Dòng stream cơ bản
+
+Có 3 dòng stream cơ bản trong linux:
+
+- **stdin**: Thiết bị nhập input cho shell ví dụ như bàn phím
+- **stdout**: Hiển thị kết quả các lệnh lên terminal cho ta thấy
+- **stderr**: Hiển thị các lỗi trong quá trình thực thi một lệnh hay thực hiện một công việc nào đó.
+
+Chuyển hướng output:
+- Ta có thể sử dụng `>` để chuyển kết quả của một câu lệnh vào trong một file nào đó thay vì hiển thị ra màn hình
+- Để ghi đè kết quả lên một file có sẵn ta dùng dấu `>>`
+
+Chuyển hướng error sử dụng dấu `2>`
+
+Đường ống dẫn (pipes - ký hiệu: `|`): Cho phép chúng ta lấy kết quả của lệnh trước dẫn đến cho lệnh phía sau nó.
+
+#### 1.1.2. Bash Operators
+
+- Command “chaining”
+
+    - Sequence: `;` - Thực thi nhiều task. Sau khi task 1 hoàn thành thì đến task thứ 2, task thứ 2 hoàn thành đến task thứ 3...
+
+    - Parallel execution: `&` - Thực thi các task cùng một lúc
+
+- Conditional execution
+
+    - And operator: `&&` - Task 2 chỉ được thực thi nếu task 1 thực thi thành công
+
+    - Or operator: `||` - Task 2 chỉ được thực thi nếu task 1 thực thi không thành công
+
+- Pipelines
+
+    - Pipe operator: `|` - Được sử dụng để gửi output từ task 1 (stdout) đến input của task 2 (stdin)
+
+    - Pipe error operator: `|&` - Error output của task 1 (stderr) cũng được chuyển tới input của task 2 (stdin)
+
+- Input/output redirection
+
+    - Redirecting input: `<` - Input đọc từ file (VD: `sort < list.txt`)
+
+    - Redirecting input – here documents: `<<` - Được sử dụng khi input của lệnh nên được lấy trực tiếp từ terminal, thay vì từ file (VD: `sort << STOP`)
+
+    - Redirecting input – here string:  `<<<` - Input đọc từ string (VD: `wc <<< "hello world"`)
+
+    - Redirecting output – stdout: 
+        - `>` - Ghi output vào file
+
+        - `>>` - Ghi output vào file, ghi đè luôn file nếu nó tồn tại
+
+    - Redirecting output – stderr: 
+        - `2>` - Ghi stderr vào file
+        - `2>>` - Ghi stderr vào file, ghi đè luôn file nếu nó tồn tại
+
+    - Redirecting output – stdout and stderr: 
+        - `&>` - Gửi stdout và stderr vào file
+        - `&>>` - Gửi stdout và stderr vào file, ghi đè luôn file nếu nó tồn tại
 
 ### 1.2. grep
 `grep` là 1 lệnh rất hữu ích trong việc tìm kiếm và khai thác nội dung văn bản bên trong tập tin.
@@ -831,6 +887,8 @@ AbC
 - [Các lệnh trong Linux](http://www.justpassion.net/tech/programming/bash-shell)
 
 - [find in Linux](https://viblo.asia/p/cung-tim-hieu-find-command-trong-linux-ymwGXVPnR4p1)
+
+- [Bash Operators in Linux](https://www.luxoft-training.com/news/bash-operators-in-linux/)
 
 
 
