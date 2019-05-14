@@ -987,6 +987,8 @@ unset $IFS
 
 ### 2.3. Shell Scripting
 
+Yêu cầu: Tính tổng tất cả các số trong file
+
 Dùng `awk`
 
 ## 3. Nguồn tham khảo
