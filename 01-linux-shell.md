@@ -12,14 +12,6 @@ Có 3 dòng stream cơ bản trong linux:
 - **stdout**: Hiển thị kết quả các lệnh lên terminal cho ta thấy
 - **stderr**: Hiển thị các lỗi trong quá trình thực thi một lệnh hay thực hiện một công việc nào đó.
 
-Chuyển hướng output:
-- Ta có thể sử dụng `>` để chuyển kết quả của một câu lệnh vào trong một file nào đó thay vì hiển thị ra màn hình
-- Để ghi đè kết quả lên một file có sẵn ta dùng dấu `>>`
-
-Chuyển hướng error sử dụng dấu `2>`
-
-Đường ống dẫn (pipes - ký hiệu: `|`): Cho phép chúng ta lấy kết quả của lệnh trước dẫn đến cho lệnh phía sau nó.
-
 #### 1.1.2. Bash Operators
 
 - Command “chaining”
@@ -51,15 +43,15 @@ Chuyển hướng error sử dụng dấu `2>`
     - Redirecting output – stdout: 
         - `>` - Ghi output vào file
 
-        - `>>` - Ghi output vào file, ghi đè luôn file nếu nó tồn tại
+        - `>>` - Ghi output vào file, ghi thêm vào cuối file nếu nó tồn tại
 
     - Redirecting output – stderr: 
         - `2>` - Ghi stderr vào file
-        - `2>>` - Ghi stderr vào file, ghi đè luôn file nếu nó tồn tại
+        - `2>>` - Ghi stderr vào file, ghi thêm vào cuối file nếu nó tồn tại
 
     - Redirecting output – stdout and stderr: 
         - `&>` - Gửi stdout và stderr vào file
-        - `&>>` - Gửi stdout và stderr vào file, ghi đè luôn file nếu nó tồn tại
+        - `&>>` - Gửi stdout và stderr vào file, ghi thêm vào cuối nếu nó tồn tại
 
 ### 1.2. grep
 `grep` là 1 lệnh rất hữu ích trong việc tìm kiếm và khai thác nội dung văn bản bên trong tập tin.
@@ -890,15 +882,112 @@ Ví dụ: `./countNumberOfLines.sh "ok" test.log`
 
 #### 2.1.2. Calculate KLOC of code C/C++ files in a directory
 
-Tính KLOC của các file code C/C++ trong một thư mục.
+Tính KLOC của các file code C/C++ trong một thư mục (Input là thư mục chỉ định)
 
+Đầu tiên, ta tìm các file có đuôi `.c`, `.cpp`, `.h` trong thư mục input của script:
 
+`find -regex '.*/.*\.\(c\|cpp\|h\)$' -print0`
+
+Vì tên file có thể có khoảng trắng nên ta find xong thì in ra các file cách nhau bởi `\0` và định dạng tham số theo `\0`, sau đó in ra nội dung tất cả các file:
+
+`xarg -0 cat`
+
+Thêm `\n` vào cuối file: `sed '$a\\n'` vì `wc -l` chỉ đếm ký tự `\n` nên có thể bị đếm thiếu dòng.
+
+Vì file code có thể có khoảng trắng xuống dòng thừa và không tính comment (dạng `//` hoặc dạng `/* ... */`) nên ta dùng `sed` để xóa chúng. 
+
+- Bước đầu là xóa các comment dạng `/* ... */` trên nhiều dòng
+`sed ':a;N;$!ba;s/\/\*.*\*\//\n/'`
+- Sau đó xóa comment dạng `//` và các dòng trống.
+`sed '/^\s*\/\/.*/d;/^\s*$/d'`
+
+Cuối cùng kết hợp với `wc -l` để đếm dòng code:
+
+```
+#!/bin/bash
+find $1 -regex '.*/.*\.\(c\|cpp\|h\)$' -print0 | xargs -0 cat | sed '$a\\n' | sed ':a;N;$!ba;s/\/\*.*\*\//\n/' | sed '/^\s*\/\/.*/d;/^\s*$/d' | wc -l
+```
+ 
+ $1 là thư mục là ta cần đếm KLOC
+
+Sau đó, chia giá trị tìm được cho 1000: `echo "$count / 1000" | bc -l`
 
 ### 2.2. System
 
+#### 2.2.1. Kill multiple processes following a patterns
+
+- Đăng nhập root
+
+- Input: tên process
+
+- Dùng `ps -a` để hiển thị tất cả các process
+
+- Dùng `grep -i` để tìm kiếm theo pattern (không phân biệt hoa thường) trong kết quả của lệnh `ps -a` (với pattern là tham số người dùng nhập)
+
+- Dùng `awk { print $1 }` để in ra PID vì PID ở cột đầu tiên
+
+- Dùng `xargs kill -9` để định dạng tham số là lệnh `kill -9` để kill process
+
+#### 2.2.2. Kill processes opening a specific port
+
+- Đăng nhập root
+
+- Input: port
+
+- `netstat`
+    - `-l` : Kiểm tra các port đang ở trạng thái listening
+    - `-n` : Hiển thị port
+    - `-t` : Dùng phương thức TCP
+    - `-u` : Dùng phương thức UDP
+    - `-p` : Tên chương trình
+
+- `grep $1` : Tìm theo pattern là port đầu vào trong kết quả xuất ra từ `netstat`
+
+- `awk '{ print $7 }'` : In ra PID/Program name
+
+- `awk -F/ '{print $1}'` : In ra PID với ký tự phân cách là `/` vì nó có dạng `PID/Program name` và PID tương ứng với trường thứ 1
+
+- `xargs kill -9` : Định dạng tham số rồi kill
+
+#### 2.2.3. List opennned ports, handles
+
+- Đăng nhập root
+
+- Dựa vào kiến thức netstat ở bài trên thì lệnh để thực hiện yêu cầu bài này là: `netstat -lnptu`
+
+#### 2.2.4. Find files via regular expressions, and remove them
+
+- Input: $1 là thư mục, $2 là pattern
+
+- Yêu cầu: Tìm các file chứa pattern rồi xóa các file đó
+
+- `find $1 -type f -print0` : Tìm trong thư mục tất cả các file và in ra với phân cách `\0`
+
+- `xargs -0 grep -l $2` : Định dạng tham số với phân cách `\0`, tìm theo pattern trong tất cả các file rồi in ra các file có chứa pattern đó (bình thường thì in ra các dòng chứa pattern nhưng có tùy chọn `-l` nên in ra các file chứa pattern)
+
+- `xargs rm -f -- *\ *` : Định dạng tham số và xóa file (`-- *\ *` là để xóa được các file có chứa khoảng cách)
+
+#### 2.2.5. List, one at a time, all files larger than 100K in the /home/username directory tree. Give the user the option to delete or compress the file, then proceed to show the next one. Write to a logfile the names of all deleted files and the deletion times
+
+- Tìm tất cả các file có size > 100K trong thư mục $HOME rồi đưa vào mảng (dùng IFS để mảng có thể lấy được các file mà tên có khoảng trắng):
+
+```
+IFS=$'\t\n'
+fileArr=(`find $HOME -type f -size +100k`)
+unset $IFS
+```
+
+- Dùng for để duyệt từng file `for file in ${fileArr[*]}`:
+    - In ra 3 lựa chọn
+    - Đọc số từ bàn phím `read choose`
+    - Nếu choose=1 thì xóa
+    - Nếu choose=2 thì nén
+    - Nếu choose=3 thì bỏ qua
+    - Các giá trị còn lại của choose thì break vòng lặp là in ra "Exit"
 
 ### 2.3. Shell Scripting
 
+Dùng `awk`
 
 ## 3. Nguồn tham khảo
 
