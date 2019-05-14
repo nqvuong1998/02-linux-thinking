@@ -871,6 +871,28 @@ AbC
 
 ### 2.1. Processing texts
 
+#### 2.1.1. Count the number of lines satisfying a specific pattern in a log file
+
+Đếm số lượng dòng thỏa mãn một pattern cụ thể trong log file.
+
+```
+#!/bin/bash
+grep -c $1 $2
+```
+
+Cách chạy:
+```
+$ sudo chmod +x <script>
+$ ./<script> <pattern> <filename>
+```
+
+Ví dụ: `./countNumberOfLines.sh "ok" test.log`
+
+#### 2.1.2. Calculate KLOC of code C/C++ files in a directory
+
+Tính KLOC của các file code C/C++ trong một thư mục.
+
+
 
 ### 2.2. System
 
