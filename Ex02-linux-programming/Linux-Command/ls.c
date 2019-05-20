@@ -173,7 +173,7 @@ int main(int argc, char * argv[]) {
                 print_info_dir(argv[i]);
             }
 
-            if(i<argc-1 && argc > 2) printf("\n");
+            if(i < argc-1 && argc > 2) printf("\n");
         }
     }
     return 0;
