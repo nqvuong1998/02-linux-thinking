@@ -155,20 +155,6 @@ int main(int argc, char * argv[]) {
         getcwd(pathname, 128);
         print_info_dir(pathname);
     }
-    else if(argc == 2){
-        if(!is_dir(argv[1])){
-            if(strstr(argv[1],"/") == NULL){
-                strcpy(pathname,"./");
-                strcat(pathname,argv[1]);
-            }
-            else strcpy(pathname,argv[1]);
-            print_info_file(pathname);
-            printf(" %s\n", argv[1]);
-        }
-        else {
-            print_info_dir(argv[1]);
-        }
-    }
     else{
         int i;
         for(i = 1;i <= argc - 1;i++){
@@ -183,11 +169,11 @@ int main(int argc, char * argv[]) {
                 printf(" %s\n", argv[i]);
             }
             else {
-                printf("%s:\n", argv[i]);
+                if(argc > 2) printf("%s:\n", argv[i]);
                 print_info_dir(argv[i]);
             }
 
-            if(i<argc-1) printf("\n");
+            if(i<argc-1 && argc > 2) printf("\n");
         }
     }
     return 0;
