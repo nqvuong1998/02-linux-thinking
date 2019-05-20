@@ -55,57 +55,6 @@ void print_perms(mode_t st) {
     printf("%s", perms);
 }
 
-void ls_l(char path[]) {
-    char tmpPath[128];
-    DIR * dir; struct dirent * file; struct stat sbuf;
-    char buf[128];
-    struct passwd pwent, * pwentp;
-    struct group grp, * grpt;
-    char datestring[256];
-    struct tm time;
-    dir = opendir(path);
-    // if(dir == NULL){
-    //     printf("ls: cannot access '%s': No such file or directory\n", path);
-    //     return;
-    // }
-    int total = 0;
-
-    while(file=readdir(dir)) {
-        if(file->d_name[0]=='.') continue;
-        strcpy(tmpPath,path);
-        strcat(tmpPath,"/");
-        strcat(tmpPath,file->d_name);
-        stat(tmpPath,&sbuf);
-        
-        print_perms(sbuf.st_mode);
-        printf(" %2d", (int)sbuf.st_nlink);
-
-        if (!getpwuid_r(sbuf.st_uid, &pwent, buf, sizeof(buf), &pwentp))
-            printf(" %s", pwent.pw_name);
-        else
-            printf(" %d", sbuf.st_uid);
- 
-        if (!getgrgid_r (sbuf.st_gid, &grp, buf, sizeof(buf), &grpt))
-            printf(" %s", grp.gr_name);
-        else
-            printf(" %d", sbuf.st_gid);
-
-        total += (int)sbuf.st_blocks;
-
-        printf(" %10d", (int)sbuf.st_size);
-        
-        localtime_r(&sbuf.st_mtime, &time);
-        
-        print_date(time);
-
-        printf(" %s\n", file->d_name);
-
-        tmpPath[0]='\0';
-    }
-
-    printf("total %d\n",total/2);
-}
-
 void print_info_dir(char path[]){
     char tmpPath[128];
     DIR * dir; struct dirent * file; struct stat sbuf;
@@ -119,8 +68,8 @@ void print_info_dir(char path[]){
         printf("ls: cannot access '%s': No such file or directory\n", path);
         return;
     }
-    int total = 0;
 
+    int total = 0;
     while(file=readdir(dir)) {
         if(file->d_name[0]=='.') continue;
         strcpy(tmpPath,path);
@@ -151,7 +100,7 @@ void print_info_dir(char path[]){
 
         printf(" %s\n", file->d_name);
 
-        tmpPath[0]='\0';
+        memset(tmpPath, 0, sizeof(tmpPath));
     }
 
     printf("total %d\n",total/2);
@@ -165,7 +114,13 @@ void print_info_file(char path[]){
     char datestring[256];
     struct tm time;
 
-    stat(path, &sbuf);      
+    int isExist = stat(path, &sbuf);
+
+    if(isExist != 0){
+        printf("ls: cannot access '%s': No such file or directory\n", path);
+        return;
+    }
+
     print_perms(sbuf.st_mode);
     printf(" %2d", (int)sbuf.st_nlink);
 
@@ -185,41 +140,55 @@ void print_info_file(char path[]){
         
     print_date(time);
 
-    printf(" %s\n", file->d_name);
 }
 
-int is_regular_file(const char *path)
+int is_dir(const char *path)
 {
     struct stat path_stat;
     stat(path, &path_stat);
-    return S_ISREG(path_stat.st_mode);
+    return S_ISDIR(path_stat.st_mode);
 }
 
 int main(int argc, char * argv[]) {
     char pathname[128];
     if(argc == 1){
         getcwd(pathname, 128);
-        ls_l(pathname);
+        print_info_dir(pathname);
     }
     else if(argc == 2){
-        //ls_l(argv[1]);
-        if(is_regular_file(argv[1])){
-            if(strstr(argv[1],"/")==NULL){
+        if(!is_dir(argv[1])){
+            if(strstr(argv[1],"/") == NULL){
                 strcpy(pathname,"./");
                 strcat(pathname,argv[1]);
             }
             else strcpy(pathname,argv[1]);
             print_info_file(pathname);
+            printf(" %s\n", argv[1]);
         }
-        else print_info_dir(argv[1]);
+        else {
+            print_info_dir(argv[1]);
+        }
     }
     else{
-        // int i;
-        // for(i = 1;i <= argc - 1;i++){
-        //     printf("%s:\n", argv[i]);
-        //     ls_l(argv[i]);
-        //     if(i<argc-1) printf("\n");
-        // }
+        int i;
+        for(i = 1;i <= argc - 1;i++){
+            if(!is_dir(argv[i])){
+                if(strstr(argv[i],"/") == NULL){
+                    strcpy(pathname,"./");
+                    strcat(pathname,argv[i]);
+                }
+                else strcpy(pathname,argv[i]);
+                print_info_file(pathname);
+                memset(pathname, 0, sizeof(pathname));
+                printf(" %s\n", argv[i]);
+            }
+            else {
+                printf("%s:\n", argv[i]);
+                print_info_dir(argv[i]);
+            }
+
+            if(i<argc-1) printf("\n");
+        }
     }
     return 0;
 }
