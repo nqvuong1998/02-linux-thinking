@@ -989,7 +989,9 @@ unset $IFS
 
 Yêu cầu: Tính tổng tất cả các số trong file
 
-Dùng `awk`
+```
+sum=0; for line in `cat $1`; do sum=$((sum + $((10#$line)))); done; echo $sum
+```
 
 ## 3. Nguồn tham khảo
 

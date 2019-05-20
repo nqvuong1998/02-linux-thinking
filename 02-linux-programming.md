@@ -38,15 +38,17 @@ GNU Debugger (GDB) là debugger phổ biến nhất cho UNIX system để debug 
 
 - 
 
-
-
 #### 2.1.2. makefile
+
 
 
 ### 2.2. Linux Command
 
+For each directory that is listed, preface the files with a line `total BLOCKS', where BLOCKS is the total disk allocation for all files in that directory.
 
 ### 2.3. Trò chơi xếp bi
+
+
 
 ## 3. Nguồn tham khảo
 
