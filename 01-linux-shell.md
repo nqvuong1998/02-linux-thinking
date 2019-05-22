@@ -993,6 +993,12 @@ Yêu cầu: Tính tổng tất cả các số trong file
 sum=0; for line in `cat $1`; do sum=$((sum + $((10#$line)))); done; echo $sum
 ```
 
+hoặc
+
+```
+echo "Sum =" `awk '{ sum += $1 } END { print sum }' $1`
+```
+
 ## 3. Nguồn tham khảo
 
 - [10 Useful Chaining Operators in Linux with Practical Examples](https://www.tecmint.com/chaining-operators-in-linux-with-practical-examples/)
