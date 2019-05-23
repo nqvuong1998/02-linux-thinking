@@ -274,6 +274,11 @@ void initRandomArr()
     }
 }
 
+void handleFile(int socket)
+{
+
+}
+
 void *server_handler (void *fd_pointer)
 {
 	int sock = *(int *)fd_pointer;
@@ -292,7 +297,6 @@ void *server_handler (void *fd_pointer)
     {
         printf("1 client is aborted because of over client!\n");
         send(sock,"Over clients",1024,0);
-        //pthread_cancel(server_thread);
         pthread_mutex_lock(&lock);
         countClients--;
         pthread_mutex_unlock(&lock);
@@ -363,7 +367,7 @@ void *server_handler (void *fd_pointer)
                     printf("Wait receive all files at client %d!\n", code);
                     while(isSendAllFiles()==false){}
 
-                    rankingAndSendToCLient("filerank.txt", sock);
+                    rankingAndSendToCLient("filerank.txt-server", sock);
                     printf("File Rank at client %d\n",code);
                     break;
                 }

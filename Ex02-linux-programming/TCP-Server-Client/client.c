@@ -193,7 +193,7 @@ void writeFile(char * filename, char * newname, int num)
                     send(sockfd,id,1024,0);
                     sendFile(id,sockfd);
 
-                    receiveFile("filerank.txt", sockfd);
+                    receiveFile("filerank.txt-server-client", sockfd);
 
                     printf("File Rank!\n");
                     return 0;
