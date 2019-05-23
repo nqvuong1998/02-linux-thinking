@@ -1,0 +1,8 @@
+docker network create backend-netword
+
+docker build -t gcc-image
+docker run -d --net=backend-network -p 8888:8888 gcc-image --name gcc-container
+
+
+
+
