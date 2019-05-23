@@ -58,7 +58,7 @@
         - [1.8.3. Truyền biến bên ngoài vào awk](#183-truyền-biến-bên-ngoài-vào-awk)
         - [1.8.4. Đọc 1 dòng tường minh sử dụng getline](#184-đọc-1-dòng-tường-minh-sử-dụng-getline)
         - [1.8.5. Lọc các dòng được xử lý bởi awk với các mẫu lọc (pattern)](#185-lọc-các-dòng-được-xử-lý-bởi-awk-với-các-mẫu-lọc-pattern)
-        - [1.8.6. Thiết lập dấu phân cách cho các trường](#186-thiết-lập-dấu-phân-cách-cho-các-trường
+        - [1.8.6. Thiết lập dấu phân cách cho các trường](#186-thiết-lập-dấu-phân-cách-cho-các-trường)
         - [1.8.7. Sử dụng vòng lặp trong awk](#187-sử-dụng-vòng-lặp-trong-awk)
         - [1.8.8. Các hàm thao tác chuỗi trong awk](#188-các-hàm-thao-tác-chuỗi-trong-awk)
     - [1.9. sed](#19-sed)
