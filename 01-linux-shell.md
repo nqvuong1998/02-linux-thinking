@@ -859,6 +859,253 @@ $ echo abc | sed -e 's/a/A/' -e 's/c/C/'
 AbC
 ```
 
+### 1.10. Shell/Bash Script
+
+#### 1.10.1. Những điểm quan trọng cần lưu ý của một Bash script
+**Dãy kí tự #! (shebang)**
+Cho hệ điều hành biết file script này sẽ được thực thi bởi chương trình nào.
+VD: `#!bin/bash`
+
+**Đặt tên file**
+Có thể nói rằng file Bash script không yêu cầu bất cứ một điều kiện gì ngoại trừ điều kiện của hệ điều hành để đặt tên file. Bất kể một tên gì cũng được chấp nhận, phần mở rộng cũng không quan trọng. Lấy ví dụ, bạn có thể đặt tên file Bash script là my_document.jpg.
+
+**Comment**
+Là những dòng lệnh chỉ có tác dụng chỉ dẫn hoặc mô tả và sẽ được bỏ qua trong file Bash, những dòng này sẽ được bắt đầu bằng dấu # (she). Cần lưu ý là không nên lạm dụng comment, chỉ cần những lúc thực sự cần thiết, quá nhiều comment có thể làm cho người đọc file thấy khó khăn trong việc tìm hiểu công việc được thực thi với file này là gì.
+
+#### 1.10.2. Variable trong Bash
+**Cách khai báo**
+- Để khai báo một biến, ta sử dụng ký hiệu equal (=) đặt giữa tên và giá trị của biến (không được đặt bất cứ dấu space () nào ở trước hoặc sau =.
+VD: `name="Viblo", description="Knowledge sharing site"`
+- Để truy cập tới một biến, ta sử dụng ký hiệu dollar ($) ở ngay trước tên biến đó.
+VD: `$name, $description`
+
+Cơ bản là bash shell xem những cái phân cách nhau bởi dấu khoảng trắng là những lệnh và thực thi chúng nên bạn cần chú ý:
+- Chú ý 1: với toán tử gán = nói riêng và các toán tử khác nói chung, bạn không được để khoảng trắng trước và sau nó.
+- Chú ý 2: Bạn không cần thiết lúc nào cũng cần để "" bao bọc gía trị của biến, bạn có thể bỏ chúng nếu gía trị đó không chứa khoảng trắng.
+
+**Nháy đơn và nháy đôi**
+```
+#!/bin/bash
+var="xin chao"
+echo '$var'
+echo "$var"
+echo "\$var=$var"
+```
+Kết quả:
+```
+$var
+xin chao
+$var=xin chao
+```
+
+**Ngoặc nhọn**
+VD:
+Lỗi
+```
+#!/bin/bash
+X=brace
+echo "$Xabc"
+```
+
+Đúng
+```
+#!/bin/bash
+X=brace
+echo "${X}abc"
+```
+
+**Lưu ý**
+Một số chương trình cần truyền tham số dòng lệnh vào để sử dụng, Bash cho phép sử dụng một số biến đặc biệt sau:
+$0: Tên của file script.
+$1 -> $9: Các tham số truyền vào
+$#: Số lượng của tham số truyền vào
+$*: Danh sách các tham số được truyền vào
+(các trường hợp $# và $* sẽ không bao gồm $0)
+
+**Đặc biệt**
+Có thể lưu đầu ra của một câu lệnh khác vào một biến bằng cách sử dụng một trong 2 cách sau:
+- Dùng dấu backtick
+var_name=`command`
+- Dùng dấu dollar
+var_name=$(command)
+
+https://www.computerhope.com/unix/test.htm
+#### 1.10.3. Câu lệnh rẽ nhánh
+Bash hỗ trợ 3 dạng của câu lệnh điều kiện:
+- Dạng đơn giản: chỉ bao gồm một điều kiện, tùy theo điều kiện đúng hay sai mà sẽ thực hiện câu lệnh cụ 
+```
+if conditional ; then
+    statement_1
+else
+    statement_2
+fi
+```
+- Dạng đầy đủ: bao gồm từ 2 điều kiện trở lên
+```
+if conditional_1 ; then
+    statement_1
+elif conditional_2 ; then
+    statement_2
+else
+    statement_3
+fi
+```
+- Dạng mở rộng: có nhiều điện lồng nhau (nested)
+```
+if conditional_1; then
+    if conditional_2; then
+        statement_1
+    else
+        statement_2
+    fi
+fi
+```
+
+Thông trường conditional của câu lệnh if có thể được dùng dưới 2 dạng:
+- Dùng `test` command: `test expression`
+- Dùng `[]` symbol: `[ expression ]`
+
+Một số ví dụ:
+```
+if [ $var = "true" ] ; then
+    echo "Hello World!"
+else
+    exit
+fi
+
+```
+
+```
+file="/usr/sbin/bash"
+
+if [ -f $file ]; then
+    echo "$file is a regular file"
+elif [ -d $file ]; then
+    echo "$file is a directory"
+else
+    echo "$file is neither a file nor a directory"
+fi
+```
+
+#### 1.10.4. Vòng 
+**Các loại vòng lặp**
+*for*
+`for (( exp1; exp2; exp3 )); do COMMANDS; done`
+VD: `for ((i=0;$i<10;i=$i+1)); do echo $i; done`
+
+*for each*
+`for NAME [in WORDS ... ]; do COMMANDS; done`
+Nếu WORDS không được chỉ định cụ thể, vòng lặp sẽ tự động sử dụng danh sách tham số truyền vào file Bash.
+VD: In thư mục con của thư mục hiện tại
+```
+for dir in `ls $PWD`; do
+if [ -d $dir ]; then
+    echo $dir
+fi;
+done
+```
+
+VD:
+```
+#!/bin/bash
+for A in *.bak
+do
+	mv $A /home/backup
+done
+```
+
+VD:
+```
+#!/bin/bash
+for A in 1 2 3
+do
+	echo $A
+done
+```
+Như bạn thấy thì vòng lặp for sẽ duyệt qua tất cả các phần tử được phân cách nhau bởi dấu khoảng trắng, nên như chú ý ở trên với phần biến nếu bạn có khoảng trắng trong giá trị của biến thì hãy sử dụng cặp nháy ""
+
+*while*
+`while CONDITION; do COMMANDS; done`
+-lt : little than
+
+```
+i="0";
+while [ $i -lt 10 ]; do echo $i; i=$[$i+1]; done
+```
+
+*util*
+`until CONDITION; do COMMANDS; done`
+COMMAND sẽ còn thực hiện khi CONDITION không thỏa mãn (ở while thì thực hiện khi CONDITION thỏa mãn)
+```
+i="0"; until [ $i -ge 10 ]; do echo $i; i=$[$i+1]; done
+```
+
+**Điều kiện dừng vòng lặp**
+*Dừng theo điều kiện CONDITION*
+-eq: bằng (equal)
+-gt: lớn hơn (greater than)
+-le: nhỏ hơn hoặc bằng (little than or equal)
+-ne: không bằng (not equal)
+Ngoài ra còn rất nhiều ký hiệu hữu ích khác mà bạn có thể dễ dàng kiểm tra thông qua câu lệnh man test.
+https://www.computerhope.com/unix/test.htm
+
+*Dừng theo điều kiện trong COMMAND*
+- continue: thực hiện ngay lập tức lần lặp tiếp theo cho dù lần lặp hiện tại vẫn còn câu lệnh chưa thực hiện xong. 
+- break: thực hiện việc kết thúc vòng lặp cho dù còn bao nhiêu lần lặp đi nữa. 
+
+#### 1.10.5. Câu lệnh hữu ích khác
+- alias: Cú pháp dùng để gán tên cho một chuỗi các lệnh thực thi phức tạp
+VD: `alias print_10_number='for (( i=0; i < 10; i++ )); do echo $i; done'`
+
+- history: Dùng để in danh sách các câu lệnh Bash được sử dụng gần nhất.
+
+- test: Không được cung cấp bởi Bash tuy nhiên lại được sử dụng nhiều nhất, dùng để kiểm tra điều kiện.
+
+- getopts: Truy cập với các tham số dòng lệnh 
+VD: Chương trình đơn giản yêu cầu 1 giá trị số nguyên (< 10) và 1 giá trị chuỗi ký tự
+```
+#!/bin/bash
+usage() { echo "Usage: $0 [-i (< 10)] [-s <string>]" 1>&2; exit 1; }
+while getopts ":i:s:" o; do
+    case "${o}" in
+        i)
+            i=${OPTARG}
+            ((i < 10)) || usage
+            ;;
+        s)
+            s=${OPTARG}
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+ if [ -z "${i}" ] || [ -z "${s}" ]; then
+     usage
+ fi
+ echo "i = ${i}"
+ echo "s = ${s}"
+```
+
+exit: Thoát khỏi Bash shell.
+
+#### 1.10.6 Mảng
+```
+#!/bin/bash
+var[1]="test"
+# truy cập mảng
+echo ${var[1]}
+# hoặc khai báo như dưới
+var2=( [0]="mot" [1]="hai" [3]="bon" ) # vì phần tử thứ 3 của mảng không được khởi tạo nên nó sẽ là null
+var3=( mot hai ba ) # phân cách các phần tử bằng dấu khoảng trắng
+
+# để đếm số phần tử trong mảng bạn sẽ dùng kí tự # như sau
+echo ${#var2[@]}
+# hoặc
+echo ${#var2[*]}
+```
+
 ## 2. Bài tập
 
 ### 2.1. Processing texts
