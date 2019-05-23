@@ -3,14 +3,12 @@
 #include<string.h>    
 #include<sys/socket.h>    
 #include<arpa/inet.h> 
-#include <stdbool.h>
+#include<stdbool.h>
 
 #include<sys/sendfile.h>
 #include<sys/stat.h>
 #include<fcntl.h>
 #include<errno.h>
-
-#define BUFSIZ 1024
 
 void sendFile(char * filename, int socket)
 {
@@ -157,12 +155,19 @@ void writeFile(char * filename, char * newname, int num)
     char newname[100];
 	if(recv(sockfd,id,1024,0 ) >= 0)
     {
-        printf("Client %s\n",id);
+        if(strcmp(id,"Over clients")==0)
+        {
+            printf("Over clients\n");
+            return 1;
+        }
+        printf("Client ID: %s\n",id);
         strcat(id,".txt-client");
         
         strcpy(newname,id);
         strcat(newname, "-tmp");
         remove(id);
+        FILE * f =fopen(id,"w");
+        fclose(f);
     }
     while (1)
     {
@@ -185,17 +190,16 @@ void writeFile(char * filename, char * newname, int num)
                 if(strcmp(server_reply,"full")==0)
                 {
                     //send file from client
-                    send(sockfd,"send",1024,0);
                     send(sockfd,id,1024,0);
                     sendFile(id,sockfd);
 
                     receiveFile("filerank.txt", sockfd);
 
-                    printf("File Rank!!!\n");
-
-                    break;
+                    printf("File Rank!\n");
+                    return 0;
+                    //break;
                 }
-                if(strcmp(server_reply,"Number of clients must be in range (3-9)!!!")==0)
+                if(strcmp(server_reply,"Not in range clients")==0)
                 {
                     break;
                 }
@@ -217,18 +221,15 @@ void writeFile(char * filename, char * newname, int num)
             if(strcmp(server_reply,"full")==0)
             {
                 //send file from client
-                send(sockfd,"send",1024,0);
-                send(sockfd,id,1024,0);
-                sendFile(id,sockfd);
+                    send(sockfd,id,1024,0);
+                    sendFile(id,sockfd);
 
-                char filerank[100];
-                recv(sockfd,filerank,1024,0);
-                
-                //receiveFile(filerank, sockfd);
+                    receiveFile("filerank.txt", sockfd);
 
-                //printf("File Rank!!!\n");
+                    printf("File Rank!\n");
+                    return 0;
             }
-            else if(strcmp(server_reply,"Number of clients must be in range (3-9)!!!")!=0)
+            else if(strcmp(server_reply,"Not in range clients")!=0)
             {
                     num=atoi(server_reply);
                     writeFile(id,newname,num);

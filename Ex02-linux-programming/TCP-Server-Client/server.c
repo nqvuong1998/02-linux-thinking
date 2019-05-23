@@ -6,21 +6,19 @@
 #include<unistd.h>    
 #include<pthread.h> 
 #include<time.h>
-#include <stdbool.h>
+#include<stdbool.h>
 
 #include<sys/sendfile.h>
 #include<sys/stat.h>
 #include<fcntl.h>
 #include<errno.h>
 
-#define MAX_CLIENTS 9
+#define MAX_CLIENTS 2
 #define MIN_CLIENTS 1
 #define MAX_SIZE_ARR 10
-#define MIN_SIZE_ARR 1
+#define MIN_SIZE_ARR 7
 #define MAX_VALUE 100
 #define MIN_VALUE 1
-
-#define BUFSIZ 1024
 
 int sizeArr = 0;
 int * arr;
@@ -33,9 +31,12 @@ struct client_info
 {
     bool isActive;
     int sum;
+    bool isSendFile;
 };
 
+pthread_t threads[MAX_CLIENTS];
 struct client_info clients[MAX_CLIENTS];
+int countClients = 0;
 
 void init_clients()
 {
@@ -43,6 +44,7 @@ void init_clients()
     {
         clients[i].isActive=false;
         clients[i].sum=0;
+        clients[i].isSendFile=false;
     }
 }
 
@@ -55,6 +57,7 @@ int register_clients()
         {
             clients[i].isActive=true;
             clients[i].sum=0;
+            clients[i].isSendFile=false;
             break;
         }
     }
@@ -78,11 +81,32 @@ void set_client_die(int i)
 {
     clients[i].isActive=false;
     clients[i].sum=0;
+    clients[i].isSendFile=false;
+}
+
+void set_client_receivedFile(int i)
+{
+    clients[i].isSendFile=true;
 }
 
 void set_client_sum(int i, int sum)
 {
     clients[i].sum=sum;
+}
+
+bool isSendAllFiles()
+{
+    for(int i=0;i<MAX_CLIENTS;i++)
+    {
+        if(clients[i].isActive==true)
+        {
+            if(clients[i].isSendFile==false)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 
 void sendFile(char * filename, int socket)
@@ -145,13 +169,16 @@ void receiveFile(char * filename, int socket)
     fclose(f);
 }
 
-void printArr()
+void printInfo()
 {
+    printf("Range clients: %d - %d\n",MIN_CLIENTS,MAX_CLIENTS);
+    printf("Size arr: %d\n",sizeArr);
+    printf("Arr: ");
     for(int i=0;i<sizeArr;i++)
     {
         printf("%d ", arr[i]);
     }
-    printf("\n");
+    printf("\n--------------\n");
 }
 
 int calSum(char * filename)
@@ -178,20 +205,22 @@ void rankingAndSendToCLient(char * filename, int socket)
 {
     int rank[MAX_CLIENTS] = {0}; 
       
-    for (int i = 0; i < MAX_CLIENTS - 1; i++) { 
+    for (int i = 0; i < MAX_CLIENTS; i++) { 
         int r = 1, s = 1; 
-          
-        for (int j = 0; j < MAX_CLIENTS; j++) { 
-            if(clients[j].isActive == true)
-            {
-                if (j != i && clients[j].sum < clients[i].sum) 
-                    r += 1; 
-                  
-                if (j != i && clients[j].sum == clients[i].sum) 
-                    s += 1;      
-            }
-        } 
-          
+        if(clients[i].isActive==true)
+        { 
+            for (int j = 0; j < MAX_CLIENTS; j++) { 
+                if(clients[j].isActive == true)
+                {
+                    if (j != i && clients[j].sum > clients[i].sum) 
+                        r += 1; 
+                    
+                    if (j != i && clients[j].sum == clients[i].sum) 
+                        s += 1;      
+                }
+            } 
+        }
+        
         rank[i] = (int)(r + (float)(s - 1) / (float) 2); 
     }  
     FILE *f = fopen(filename,"w");
@@ -204,7 +233,7 @@ void rankingAndSendToCLient(char * filename, int socket)
     {
         if(clients[i].isActive==true)
         {
-            fprintf(f, "Client ID : %d - Rank : %d\n",i,rank[i]);
+            fprintf(f, "Client ID : %d - Sum: %d - Rank : %d\n",i,clients[i].sum,rank[i]);
         }
     }
     fclose(f);
@@ -227,7 +256,7 @@ char * getElementFromArr()
     }
     else
     {
-        sprintf(str,"Number of clients must be in range (3-9)!!!");
+        sprintf(str,"Not in range clients");
     }
     return str;
 }
@@ -254,7 +283,22 @@ void *server_handler (void *fd_pointer)
     char message[1024];
 
     char id[10];
+    pthread_mutex_lock(&lock);
     int code = register_clients();
+    countClients++;
+    pthread_mutex_unlock(&lock);
+
+    if(countClients > MAX_CLIENTS) 
+    {
+        printf("1 client is aborted because of over client!\n");
+        send(sock,"Over clients",1024,0);
+        //pthread_cancel(server_thread);
+        pthread_mutex_lock(&lock);
+        countClients--;
+        pthread_mutex_unlock(&lock);
+    }
+    else{//else
+
     sprintf(id,"%d",code);
     write(sock,id,strlen(id)+1);
     
@@ -267,7 +311,29 @@ void *server_handler (void *fd_pointer)
             char * value = getElementFromArr();
             pthread_mutex_unlock(&lock); 
             send(sock,value,strlen(value)+1,0);
-            free(value);
+            //free(value);
+            if(strcmp(value,"full")==0)
+            {
+                free(value);
+                //receive file from client
+                recv(sock,message,1024,0);
+                char filename[100];
+                strcpy(filename,message);
+                strcat(filename,"-server");
+
+                receiveFile(filename, sock);
+                set_client_receivedFile(code);
+
+                int sum = calSum(filename);
+                set_client_sum(code, sum);
+
+                printf("Wait receive all files at client %d!\n", code);
+                while(isSendAllFiles()==false){}
+                
+                rankingAndSendToCLient("filerank.txt", sock);
+                printf("File Rank at client %d\n",code);
+                
+            }
         }
         else if (strcmp(message,"auto")==0)
         {
@@ -279,31 +345,40 @@ void *server_handler (void *fd_pointer)
                 pthread_mutex_unlock(&lock); 
                 send(sock,value,strlen(value)+1,0);
                 
-                
-                if(strcmp(value,"full")==0 || strcmp(value,"Number of clients must be in range (3-9)!!!")==0)
+                if(strcmp(value,"full")==0)
                 {
                     free(value);
+                    //receive file from client
+                    recv(sock,message,1024,0);
+                    char filename[100];
+                    strcpy(filename,message);
+                    strcat(filename,"-server");
 
+                    receiveFile(filename, sock);
+                    set_client_receivedFile(code);
+
+                    int sum = calSum(filename);
+                    set_client_sum(code, sum);
+
+                    printf("Wait receive all files at client %d!\n", code);
+                    while(isSendAllFiles()==false){}
+
+                    rankingAndSendToCLient("filerank.txt", sock);
+                    printf("File Rank at client %d\n",code);
+                    break;
+                }
+                if(strcmp(value,"Not in range clients")==0)
+                {
+                    free(value);
+                    
                     break;
                 }
                 free(value);
-                sleep(1);
-                
+                //sleep(1);
+
+                //micro sec
+                usleep(500000); //0.5s
             }
-        }
-        else if(strcmp(message,"send")==0)
-        {
-            //receive file from client
-            recv(sock,message,1024,0);
-            char filename[100];
-            strcpy(filename,message);
-            strcat(filename,"-server");
-            receiveFile(filename, sock);
-
-            set_client_sum(code, calSum(filename));
-
-            rankingAndSendToCLient("filerank.txt", sock);
-            
         }
         else
         {
@@ -313,15 +388,24 @@ void *server_handler (void *fd_pointer)
     
     if(read_size == 0)
     {
+
+        pthread_mutex_lock(&lock);
         set_client_die(code);
+        countClients--;
+        pthread_mutex_unlock(&lock);
         printf("Client %d disconnected\n", code);
         fflush(stdout);
     }
 	else if(read_size == -1)
     {
+        
+        pthread_mutex_lock(&lock);
         set_client_die(code);
+        countClients--;
+        pthread_mutex_unlock(&lock);
         printf("recv failed at client %d\n", code);
     }
+    }//endelse
     free(fd_pointer);
     return 0;
 }
@@ -338,7 +422,7 @@ int main()
 
     initRandomArr();
 
-    printArr();
+    printInfo();
 
     init_clients();
 
@@ -384,6 +468,7 @@ int main()
             {
                 printf("Failed to create thread\n");
             }
+            
     }
     
     pthread_mutex_destroy(&lock);
