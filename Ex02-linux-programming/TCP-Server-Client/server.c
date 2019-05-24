@@ -13,10 +13,10 @@
 #include<fcntl.h>
 #include<errno.h>
 
-#define MAX_CLIENTS 2
-#define MIN_CLIENTS 1
-#define MAX_SIZE_ARR 10
-#define MIN_SIZE_ARR 7
+#define MAX_CLIENTS 9
+#define MIN_CLIENTS 3
+#define MAX_SIZE_ARR 999
+#define MIN_SIZE_ARR 101
 #define MAX_VALUE 100
 #define MIN_VALUE 1
 

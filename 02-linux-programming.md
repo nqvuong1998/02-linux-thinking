@@ -631,7 +631,7 @@ For each directory that is listed, preface the files with a line `total BLOCKS',
 
 - Mỗi kết nối là 1 thread
 
-- Server sẽ khởi tạo 1 mảng giá trị [1-100] với kích thước random [10-1000]
+- Server sẽ khởi tạo 1 mảng giá trị [1-100] với kích thước random (10-1000)
 
 - 2 < clients < 10
 
