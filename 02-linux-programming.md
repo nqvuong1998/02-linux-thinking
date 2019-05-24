@@ -181,7 +181,7 @@ Thanh nhớ stack pointer sẽ ghi nhớ lại đỉnh của stack mổi khi có
 
 Heap là vùng nhớ được cấp phát động bởi các lệnh malloc, realloc và free. Vùng nhớ heap được cấp phát mở rộng từ vùng nhớ thấp đến vùng nhớ cao (ngược lại với stack). Stack và heap mở rộng đến khi "đụng" nhau là lúc bộ nhớ cạn kiệt. Vùng nhớ heap là vùng nhớ share giữa các tất cả các shared library và dynamic library được load trong process (tiến trình).
 
-> Vùng nhớ của một tiến trình được quản lý bằng địa chỉ ảo(virtual address) nên sẽ liên tục nhau, nhưng thực tế sẽ được ánh xạ không liên tục trên RAM.
+> Vùng nhớ của một tiến trình được quản lý bằng địa chỉ ảo (virtual address) nên sẽ liên tục nhau, nhưng thực tế sẽ được ánh xạ không liên tục trên RAM.
 
 #### 1.2.2. Thread
 
@@ -494,11 +494,200 @@ GNU Debugger (GDB) là debugger phổ biến nhất cho UNIX system để debug 
 
 ### 2.2. Linux Command
 
+**Hiểu các giá trị ouput của ls -l**
+
+`-l` là 1 tùy chọn của `ls` để hiển thị output dưới dạng danh sách `dài`
+
+VD:
+
+```
+ls -l file1 
+-rw-rw-r--. 1 lilo lilo 0 Feb 26 07:08 file1
+```
+
+- `-rw-rw-r-`: loại `file` và phân quyền của user, group, others
+- `1`: số lượng `linked hard-links`
+- `lilo`: owner của file
+- `lilo`: file thuộc về group nào
+- `0`: size
+- `Feb 26 07:08`: thời gian sửa/tạo file
+- `file1`: tên file/thư mục
+
+
+**Tìm hiểu**
+
+- `opendir()`: là hàm ở directory stream tương ứng với đường dẫn và trả về 1 con trỏ `DIR` trỏ tới directory stream đó
+
+- `readdir()`: trả về 1 con trỏ tới cấu trúc `dirent` đại diện cho directory entry kế tiếp trong con trỏ DIR đã nói, nó trả về NULL thì đọc hết hoặc lỗi
+
+- Cấu trúc `dirent`:
+
+```
+struct dirent {
+    ino_t          d_ino;       /* Inode number */
+    off_t          d_off;       /* Not an offset; see below */
+    unsigned short d_reclen;    /* Length of this record */
+    unsigned char  d_type;      /* Type of file; not supported
+                                    by all filesystem types */
+    char           d_name[256]; /* Null-terminated filename */
+};
+```
+
+    - Trong này, tôi có dùng d_name để lấy tên nội dung bên trong thư mục đang trỏ
+
+- `stat()`: lấy thông tin của `file` được trỏ đến theo tên đường dẫn đưa vào cấu trúc `stat`
+
+- Cấu trúc `stat`:
+
+```
+struct stat {
+    dev_t     st_dev;         /* ID of device containing file */
+    ino_t     st_ino;         /* Inode number */
+    mode_t    st_mode;        /* File type and mode */
+    nlink_t   st_nlink;       /* Number of hard links */
+    uid_t     st_uid;         /* User ID of owner */
+    gid_t     st_gid;         /* Group ID of owner */
+    dev_t     st_rdev;        /* Device ID (if special file) */
+    off_t     st_size;        /* Total size, in bytes */
+    blksize_t st_blksize;     /* Block size for filesystem I/O */
+    blkcnt_t  st_blocks;      /* Number of 512B blocks allocated */
+
+               /* Since Linux 2.6, the kernel supports nanosecond
+                  precision for the following timestamp fields.
+                  For the details before Linux 2.6, see NOTES. */
+
+    struct timespec st_atim;  /* Time of last access */
+    struct timespec st_mtim;  /* Time of last modification */
+    struct timespec st_ctim;  /* Time of last status change */
+
+    #define st_atime st_atim.tv_sec      /* Backward compatibility */
+    #define st_mtime st_mtim.tv_sec
+    #define st_ctime st_ctim.tv_sec
+};
+```
+
+- `mode_t`: dùng để kiểm tra cấp quyền truy cập của user, group, others
+
+    - File type:
+        - S_IFMT - type of file
+        - S_IFBLK - block special
+        - S_IFCHR - character special
+        - S_IFIFO - FIFO special
+        - S_IFREG - regular
+        - S_IFDIR - directory
+        - S_IFLNK - symbolic link
+    - File mode bits:
+        - S_IRUSR - read permission, owner
+        - S_IWUSR - write permission, owner
+        - S_IXUSR - execute/search permission, owner
+        - S_IRGRP - read permission, group
+        - S_IWGRP - write permission, group
+        - S_IXGRP - execute/search permission, group
+        - S_IROTH - read permission, others
+        - S_IWOTH - write permission, others
+        - S_IXOTH - execute/search permission, others
+
+**Cài đặt**
+
 For each directory that is listed, preface the files with a line `total BLOCKS', where BLOCKS is the total disk allocation for all files in that directory.
+
+- Vì lệnh ls có thể nhận đầu vào là danh sách file hoặc danh sách thư mục, tiến hành xử lý các đối số đầu vào để có đường dẫn thích hợp
+
+- Hàm `printf_info_file`:
+
+    - Sử dụng cấu trúc stat để có thể lấy info của file
+
+    - Tiến hành xử lý `mode_t` trả về để in ra loại file và phân quyền
+
+    - Từ `uid` và `gid` dùng `getpwuid_r` và `getgrgid_r` để lấy ra tên user và group
+
+    - Lấy size của file
+
+    - In ra định dạng ngày tháng theo format
+
+    - In ra tên
+
+- Hàm `print_info_dir`:
+
+    - Dùng `opendir()` và `readdir` để mở directory stream
+
+    - Dùng cấu trúc `dirent` để lấy tên các file và thư mục trong thư mục đang xét
+
+    - Dùng cấu trúc `stat` để lấy được info của file và thư mục (như hàm `print_info_file`)
+
+    - `st_blocks`: số lượng block được cấp phát, ta tiến hành cộng dồn. Sau khi đọc xong hết, chia cho 2 thì nó tương ứng với `Total` trong lệnh `ls -l`
 
 ### 2.3. Trò chơi xếp bi
 
+**Tìm hiểu**
 
+- API của pthread (đã nói ở phần lý thuyết)
+
+- Socket TCP (đã mô hình hóa ở phần lý thuyết)
+
+**Phía Server**
+
+- Server liên tục lắng nghe và chấp nhận kết nối
+
+- Mỗi kết nối là 1 thread
+
+- Server sẽ khởi tạo 1 mảng giá trị [1-100] với kích thước random [10-1000]
+
+- 2 < clients < 10
+
+- Sẽ có 1 mảng client_info để lưu thông tin: isActive (client đó còn kết nối không), sum (tổng giá trị mà client gửi về server), isSendFile (client đã gửi file lên chưa)
+
+- Sẽ có 1 biến countClients để đếm các client đang kết nối tới server
+
+- Mỗi thread là 1 kết nối của client sẽ thực hiện các công việc sau:
+
+    - Vào mutex lock, tiến hành đăng ký `ID` cho mình từ mảng client_info, `ID` tương ứng với index của mảng này; biến countCLients tăng 1
+
+    - Kiểm tra số client có vượt quá giới hạn hay không, nếu có gửi về thông điệp Over cho client; biến countClients giảm 1
+
+    - Ngược lại, server tiến hành gửi ID về cho client biết
+
+    - 1 vòng lặp nhận thông điệp được mở ra:
+
+        - Cần lưu ý giới hạng của số client
+        
+        - Nếu thông điệp là get: nó gửi lấy phần tử từ mảng gửi về cho client (đặt trong mutex lock)
+
+        - Nếu thông điệp là auto: nó liên tục lấy phần tử từ mảng và gửi về cho client (deplay 0.5s và đặt tren mutex lock)
+
+        - Nếu thông điệp khác những cái trên thì server sẽ ???
+
+        - Đến 1 lúc nào đó, mảng full (không thể gửi phần tử nữa): server mở nhận thông điệp tên file và nhận cả file từ client
+
+        - Nhận file xong thì set giá trị isSendFile tại client ID lên true
+
+        - Tính tổng giá trị trong gile
+
+        - 1 vòng lặp để chờ tất cả các client gửi file lên hết
+
+        - Tiến hành xếp hạng và gửi file về cho client
+
+    - Khi không nhận được thông điệp hoặc nhận fail thì mở mutex lock để cập nhập tình trạng và số lượng client
+
+**Phía Client**
+
+- Tiến hành connect tới server
+
+- Thông điệp đầu tiên nó nhận được là ID hoặc thông báo Over. Nếu Over thì tắt
+
+- 1 vòng lặp mở ra
+
+    - Nhận input từ user
+
+    - Nếu là get: tiến hành nhận thông điệp các phần tử của mảng từ server
+
+    - Nếu là auto: 1 vòng lặp mở ra để liên tục nhận phần tử
+
+    - Ghi giá trị phần tử vào file mỗi khi nhận (có thứ tự)
+
+    - Lưu ý giới hạn số lượng client
+
+    - Khi mà nhận được thông điệp full: tiến hành gửi tên file và nội dung file lên server. Sau đó nhận file xếp hạng từ server.
 
 ## 3. Nguồn tham khảo
 
