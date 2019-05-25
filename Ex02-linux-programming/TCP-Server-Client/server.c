@@ -1,130 +1,7 @@
 #include "func.h"
 
-void *ranking_handler(void * context)
-{
-    while (arrServer.idx < arrServer.sizeArr)
-    {
-    }
-    
-    for(int i = 0; i < MAX_CLIENTS; i++)
-    {
-        if(clients[i].isActive == true)
-        {
-            pthread_join(clients[i].thread, NULL);
-        }
-    }
-    for(int i = 0; i < MAX_CLIENTS; i++)
-    {
-        if(clients[i].isActive == true)
-        {
-            rankingAndSendToClient("filerank-server.txt", clients[i].socket);
-        }
-    }
-    printf("File Rank!\n");
-    exit(0);
-}
-
-void *server_handler (void *fd_pointer)
-{
-    int sock = *(int *)fd_pointer;
-    pthread_mutex_lock(&lock);
-    int code = register_clients(pthread_self(), sock);
-    countClients++;
-    pthread_mutex_unlock(&lock);
-    
-    int read_size = 0, write_size = 0;
-
-    char message[1024];
-
-    char id[10];
-
-    if(countClients > MAX_CLIENTS) 
-    {
-        printf("1 client is aborted because of over client!\n");
-        send(sock,"Over clients",1024,0);
-        pthread_mutex_lock(&lock);
-        countClients--;
-        pthread_mutex_unlock(&lock);
-    }
-    else
-    {
-        sprintf(id,"%d",code);
-        send(sock,id,1024,0);
-    
-        memset( message, '\0', 1024);
-        while(read_size = recv(sock, message, 1024, 0) > 0)
-        {
-            if(strcmp(message,"get")!=0)
-            {
-                printf("Message wrong at client %d!\n", code);
-                continue;
-            }
-
-            pthread_mutex_lock(&lock);
-            char * value = getElementFromArr();
-            send(sock,value,1024,0);
-            pthread_mutex_unlock(&lock);  
-                
-            if(strcmp(value,"full")==0)
-            {
-                free(value);
-                //receive file from client
-                 memset( message, '\0', 1024);
-
-                char filename[100];
-                strcpy(filename,id);
-                strcat(filename,"-server.txt");
-
-                if(receiveFile(filename, sock) == false)
-                {
-                    printf("Error recv file data from client %d\n",code);
-                    pthread_mutex_lock(&lock);
-                    set_client_die(code);
-                    countClients--;
-                    pthread_mutex_unlock(&lock);
-                    break;
-                }
-
-                int sum = calSum(filename);
-                set_client_sum(code, sum);
-                //printf("ID = %d - Sum = %d\n",code,sum);
-
-                pthread_exit(NULL);
-                break;
-            }
-            
-            if(strcmp(value,"Not in range clients")==0)
-            {
-                free(value);           
-                continue;
-            }
-            free(value);
-            memset( message, '\0', 1024);
-        }
-    }
-    
-    if(read_size == 0)
-    {
-        pthread_mutex_lock(&lock);
-        set_client_die(code);
-        countClients--;
-        pthread_mutex_unlock(&lock);
-        printf("Client %d disconnected\n", code);
-        fflush(stdout);
-    }
-	else if(read_size == -1)
-    {
-        
-        pthread_mutex_lock(&lock);
-        set_client_die(code);
-        countClients--;
-        pthread_mutex_unlock(&lock);
-        printf("recv failed at client %d\n", code);
-    }
-    free(fd_pointer);
-    pthread_exit(NULL);
-    return 0;
-}
+void *ranking_handler(void * context);
+void *server_handler (void *fd_pointer);
 
 int main()
 {
@@ -147,12 +24,6 @@ int main()
 
     listenfd = socket(AF_INET,SOCK_STREAM,0);
 
-    //non-blocking
-    //int flags = fcntl(listenfd, F_GETFL);
-    //fcntl(listenfd, F_SETFL, flags | O_NONBLOCK);
-    ////fcntl(listenfd, F_SETFL, O_NONBLOCK);
-
-   
     if (listenfd == -1)
     {
 	   perror("Could not create Socket \n"); 
@@ -162,7 +33,6 @@ int main()
    
    bzero(&servaddr,sizeof (servaddr));
    servaddr.sin_family = AF_INET;
-   //servaddr.sin_addr.s_addr = INADDR_ANY;
    servaddr.sin_addr.s_addr = inet_addr(ADDRESS);
    servaddr.sin_port = htons(PORT);
    
@@ -203,6 +73,131 @@ int main()
         return 1;
     }
         
+    return 0;
+}
+
+void *ranking_handler(void * context)
+{
+    while (arrServer.idx < arrServer.sizeArr)
+    {
+    }
+    
+    for(int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if(clients[i].isActive == true)
+        {
+            pthread_join(clients[i].thread, NULL);
+        }
+    }
+    for(int i = 0; i < MAX_CLIENTS; i++)
+    {
+        if(clients[i].isActive == true)
+        {
+            rankingAndSendToClient("filerank-server.txt", clients[i].socket);
+        }
+    }
+    printf("File Rank!\n");
+    exit(0);
+}
+
+void *server_handler (void *fd_pointer)
+{
+    int sock = *(int *)fd_pointer;
+    pthread_mutex_lock(&lock);
+    int code = register_clients(pthread_self(), sock);
+    countClients++;
+    pthread_mutex_unlock(&lock);
+    
+    int read_size = 0, write_size = 0;
+
+    char message[BUFFER_SIZE];
+
+    char id[10];
+
+    if(countClients > MAX_CLIENTS) 
+    {
+        printf("1 client is aborted because of over client!\n");
+        send(sock,"Over clients",BUFFER_SIZE,0);
+        pthread_mutex_lock(&lock);
+        countClients--;
+        pthread_mutex_unlock(&lock);
+    }
+    else
+    {
+        sprintf(id,"%d",code);
+        send(sock,id,BUFFER_SIZE,0);
+    
+        memset( message, '\0', BUFFER_SIZE);
+        while(read_size = recv(sock, message, BUFFER_SIZE, 0) > 0)
+        {
+            if(strcmp(message,"get")!=0)
+            {
+                printf("Message wrong at client %d!\n", code);
+                continue;
+            }
+
+            pthread_mutex_lock(&lock);
+            char * value = getElementFromArr();
+            send(sock,value,BUFFER_SIZE,0);
+            pthread_mutex_unlock(&lock);  
+                
+            if(strcmp(value,"full")==0)
+            {
+                free(value);
+
+                memset( message, '\0', BUFFER_SIZE);
+
+                char filename[100];
+                strcpy(filename,id);
+                strcat(filename,"-server.txt");
+
+                if(receiveFile(filename, sock) == false)
+                {
+                    printf("Error recv file data from client %d\n",code);
+                    pthread_mutex_lock(&lock);
+                    set_client_die(code);
+                    countClients--;
+                    pthread_mutex_unlock(&lock);
+                    break;
+                }
+
+                int sum = calSum(filename);
+                set_client_sum(code, sum);
+
+                pthread_exit(NULL);
+                break;
+            }
+            
+            if(strcmp(value,"Not in range clients")==0)
+            {
+                free(value);           
+                continue;
+            }
+            free(value);
+            memset( message, '\0', BUFFER_SIZE);
+        }
+    }
+    
+    if(read_size == 0)
+    {
+        pthread_mutex_lock(&lock);
+        set_client_die(code);
+        countClients--;
+        pthread_mutex_unlock(&lock);
+        printf("Client %d disconnected\n", code);
+        fflush(stdout);
+    }
+	else if(read_size == -1)
+    {
+        
+        pthread_mutex_lock(&lock);
+        set_client_die(code);
+        countClients--;
+        pthread_mutex_unlock(&lock);
+        printf("recv failed at client %d\n", code);
+    }
+    free(fd_pointer);
+    pthread_exit(NULL);
     return 0;
 }
 

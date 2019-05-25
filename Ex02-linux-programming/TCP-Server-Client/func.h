@@ -22,8 +22,8 @@
 #define MIN_CLIENTS 3
 #define MAX_SIZE_ARR 1000
 #define MIN_SIZE_ARR 100
-#define MAX_VALUE 1
-#define MIN_VALUE 10000
+#define MAX_VALUE 10000
+#define MIN_VALUE 100
 
 #define BUFFER_SIZE 1024
 #define ADDRESS "127.0.0.1"

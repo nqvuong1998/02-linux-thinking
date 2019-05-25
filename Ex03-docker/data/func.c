@@ -6,6 +6,8 @@ struct ArrServer arrServer = {NULL,0,0};
 int countClients = 0;
 struct ArrClient arrClient = {NULL,0};
 
+//-----------------------------------------------
+
 void sendFile(char * filename, int socket)
 {
     int fd = open(filename,O_RDONLY);
@@ -14,7 +16,7 @@ void sendFile(char * filename, int socket)
         printf("Error opening file --> %s", strerror(errno));
         return;
     }
-    /* Get file stats */
+
     struct stat file_stat;
     if (fstat(fd, &file_stat) < 0)
     {
@@ -26,7 +28,6 @@ void sendFile(char * filename, int socket)
     memset(file_size,'\0',256);
     sprintf(file_size, "%d", file_stat.st_size);
 
-    /* Sending file size */
     int len = send(socket, file_size, BUFSIZ, 0);
     
     if (len < 0)
@@ -36,14 +37,11 @@ void sendFile(char * filename, int socket)
     }
     
     int remain_data = file_stat.st_size;
-    //printf("File size: %d\n",remain_data);
     int sent_bytes = 0;
     int offset = 0;
-    /* Sending file data */
     while (((sent_bytes = sendfile(socket, fd, 0, BUFSIZ)) > 0) && (remain_data > 0))
     {
         remain_data -= sent_bytes;
-        //printf("file %s - len %d - bufsiz %d\n",filename, sent_bytes,BUFSIZ);
     }
 }
 
@@ -63,20 +61,15 @@ bool receiveFile(char * filename, int socket)
         printf("Failed to open file foo --> %s\n", strerror(errno));
         return false;
     }
+    
+    if(file_size<=0)
+    {
+        fclose(f);
+        return true;
+    }
 
     int remain_data = file_size;
-    //printf("File size: %d\n",remain_data);
     int len;
-    
-    // memset( buffer, 0, sizeof(char)*BUFSIZ );
-    // while ((remain_data > 0) && (len = recv(socket, buffer, BUFSIZ, 0)) > 0)
-    // {
-    //     fwrite(buffer, sizeof(char), len, f);
-    //     //printf("file %s - len %d - bufferlen %d - bufsiz %d\n",filename, len,strlen(buffer),BUFSIZ);
-    //     remain_data -= len;
-    //     memset( buffer, 0, sizeof(char)*BUFSIZ );
-    // }
-    if(remain_data<=0)return true;
 
     do{
         memset( buffer, 0, sizeof(char)*BUFSIZ );
@@ -98,7 +91,7 @@ int calSum(char * filename)
     if(!f)
     {
         printf("Can not open %s!\n", filename);
-        return;
+        return -1;
     }
     int value;
     while(fscanf(f,"%d\n",&value) > 0)
@@ -149,7 +142,6 @@ void rankingAndSendToClient(char * filename, int socket)
         if(clients[i].isActive==true)
         {
             fprintf(f, "Client ID : %d - Sum: %d - Rank : %d\n",i,clients[i].sum,rank[i]);
-            //printf("Client ID : %d - Sum: %d - Rank : %d\n",i,clients[i].sum,rank[i]);
         }
     }
     fclose(f);

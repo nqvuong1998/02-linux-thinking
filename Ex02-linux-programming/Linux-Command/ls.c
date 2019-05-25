@@ -11,6 +11,46 @@
 #include <time.h>
 #include <locale.h>
 
+void print_date(struct tm inputTime);
+ 
+void print_perms(mode_t st);
+
+void print_info_dir(char path[]);
+
+void print_info_file(char path[]);
+
+int is_dir(const char *path);
+
+int main(int argc, char * argv[]) {
+    char pathname[128];
+    if(argc == 1){
+        getcwd(pathname, 128);
+        print_info_dir(pathname);
+    }
+    else{
+        int i;
+        for(i = 1;i <= argc - 1;i++){
+            if(!is_dir(argv[i])){
+                if(strstr(argv[i],"/") == NULL){
+                    strcpy(pathname,"./");
+                    strcat(pathname,argv[i]);
+                }
+                else strcpy(pathname,argv[i]);
+                print_info_file(pathname);
+                memset(pathname, 0, sizeof(pathname));
+                printf(" %s\n", argv[i]);
+            }
+            else {
+                if(argc > 2) printf("%s:\n", argv[i]);
+                print_info_dir(argv[i]);
+            }
+
+            if(i < argc-1 && argc > 2) printf("\n");
+        }
+    }
+    return 0;
+}
+
 void print_date(struct tm inputTime){
     time_t timer;
     struct tm * tm_info;
@@ -147,34 +187,4 @@ int is_dir(const char *path)
     struct stat path_stat;
     stat(path, &path_stat);
     return S_ISDIR(path_stat.st_mode);
-}
-
-int main(int argc, char * argv[]) {
-    char pathname[128];
-    if(argc == 1){
-        getcwd(pathname, 128);
-        print_info_dir(pathname);
-    }
-    else{
-        int i;
-        for(i = 1;i <= argc - 1;i++){
-            if(!is_dir(argv[i])){
-                if(strstr(argv[i],"/") == NULL){
-                    strcpy(pathname,"./");
-                    strcat(pathname,argv[i]);
-                }
-                else strcpy(pathname,argv[i]);
-                print_info_file(pathname);
-                memset(pathname, 0, sizeof(pathname));
-                printf(" %s\n", argv[i]);
-            }
-            else {
-                if(argc > 2) printf("%s:\n", argv[i]);
-                print_info_dir(argv[i]);
-            }
-
-            if(i < argc-1 && argc > 2) printf("\n");
-        }
-    }
-    return 0;
 }

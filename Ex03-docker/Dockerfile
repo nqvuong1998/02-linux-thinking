@@ -3,6 +3,7 @@ MAINTAINER  vuongnguyen
 RUN mkdir -p /home/data
 WORKDIR /home/data
 COPY ./data .
-RUN gcc server.c -o server -pthread 
-RUN gcc client.c -o client
+RUN apt-get update
+CMD chmod +x ./*
+ENTRYPOINT ["./run-server.sh"]
 ENV PATH /home/data:$PATH

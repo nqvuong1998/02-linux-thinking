@@ -15,7 +15,6 @@
 - [2. Bài tập](#2-bài-tập)
     - [2.1. Viết Dockerfile](#21-viết-dockerfile)
     - [2.2. Tạo image từ Dockerfile](#22-tạo-image-từ-dockerfile)
-    - [2.3. Lưu ý](#23-lưu-ý)
 - [3. Nguồn tham khảo](#3-nguồn-tham-khảo)
 
 # Docker
@@ -331,9 +330,57 @@ Kết quả:
 
 ## 2. Bài tập
 
+Yêu cầu: Viết Dockerfile để container có thể dựa vào image xây dựng từ Dockerfile này và chạy server. Client ở host kết nối tới.
+
 Thư mục mở terminal hiện hành là: `/media/vuongnguyen/DATA/STUDY/Fresher/02-linux-thinking/Ex03-docker`
 
-Thư mục hiện hành chứa: Dockerfile và thư mục data (chứa client.c và server.c)
+Thư mục hiện hành chứa: Dockerfile và thư mục data bao gồm:
+
+- `server.c`: code cho server
+
+- `client.c`: code cho client
+
+- `func.c` và `func.h`: các hàm hỗ trợ
+
+- `run-multi-clients`: script để chạy được nhiều client cùng lúc (trong script này là 3 clients)
+
+```
+gnome-terminal --command="bash -c 'cd /media/vuongnguyen/DATA/STUDY/Fresher/02-linux-thinking/Ex02-linux-programming/TCP-Server-Client/test; ./client.out a; $SHELL'"
+gnome-terminal --command="bash -c 'cd /media/vuongnguyen/DATA/STUDY/Fresher/02-linux-thinking/Ex02-linux-programming/TCP-Server-Client/test; ./client.out b; $SHELL'"
+gnome-terminal --command="bash -c 'cd /media/vuongnguyen/DATA/STUDY/Fresher/02-linux-thinking/Ex02-linux-programming/TCP-Server-Client/test; ./client.out c; $SHELL'"
+```
+
+- `run-server.sh`: chạy Makefile và run server. Có thể chỉ compile bằng Makefile thôi, không cần run server, tái sử dụng để chạy client trên container luôn.
+
+```
+make all
+./server.out
+```
+
+- `Makefile`: để compile ra chương trình chạy server và client. Mặc dù xây dựng image để chạy server, nhưng tôi viết Makefile compile cả server và client luôn.
+
+```
+all: server.out client.out
+	echo "Build done!"
+
+server.out: server.o func.o
+	gcc server.o func.o -o server.out -pthread
+
+client.out: client.o func.o
+	gcc client.o func.o -o client.out
+
+server.o: server.c func.h
+	gcc -c server.c
+
+client.o: client.c func.h
+	gcc -c client.c
+
+func.o: func.c func.h
+	gcc -c func.c
+
+clean:
+	rm -f *.o *.out
+```
 
 ### 2.1. Viết Dockerfile
 
@@ -343,8 +390,9 @@ MAINTAINER  vuongnguyen
 RUN mkdir -p /home/data
 WORKDIR /home/data
 COPY ./data .
-RUN gcc server.c -o server -pthread 
-RUN gcc client.c -o client
+RUN apt-get update
+CMD chmod +x ./*
+ENTRYPOINT ["./run-server.sh"]
 ENV PATH /home/data:$PATH
 ```
 
@@ -353,44 +401,22 @@ ENV PATH /home/data:$PATH
 - `RUN mkdir -p /home/data`: tạo thư mục /home/data trong image này
 - `WORKDIR /home/data`: định nghĩa directory cho thực thi
 - `COPY ./data .`: copy các file trong thư mục `data` trên host, vào thư mục hiện hành trong image
-- `RUN gcc server.c -o server -pthread`: chạy compile server.c trong image
-- `RUN gcc client.c -o client`: chạy compile client.c trong image
+- `RUN apt-get update`: update trong image
+- `CMD chmod +x ./*`: cấp quyền thực thi cho các file trong WORKDIR
+- `ENTRYPOINT ["./run-server.sh"]`: chạy file `run-server.sh` trong WORKDIR
 - `ENV PATH /home/data:$PATH`: khai báo biến môi trường
 
 ### 2.2. Tạo image từ Dockerfile
 
-Image mới tên là: `gcc-image:lastest`:
+- Image mới tên là: `gcc-image:lastest`:
 
 `sudo docker build -t gcc-image:lastest .`
 
-Tạo và khởi chạy container (tôi dùng foreground) từ image mới build ra, nhớ đặt tên cho container, sử dụng đường mạng `host`:
-
-- Tạo server container:
+- Tạo và khởi chạy container cho server (tôi dùng foreground) từ image mới build ra, nhớ đặt tên cho container, sử dụng chung đường mạng `host`:
 
 `sudo docker run -it --name=gcc-server --net="host" gcc-image:lastest`
 
-Hiện terminal foreground: `./server`
-
-- Tạo client container:
-
-`sudo docker run -it --name=gcc-client --net="host" gcc-image:lastest`
-
-Hiện terminal foreground: `./client`
-
-Có thể thực thi client trên host để connect tới server container.
-
-### 2.3. Lưu ý
-
-- Để tiện nên tôi viết Dockerfile để container server và client có thể dùng chung image
-
-- Nếu muốn multiple-client thì tạo và khởi chạy nhiều container dựa trên image vừa build
-
-- Có thể khởi chạy container ở background
-
-- Có thể viết script để thực thi server và client
-
-- Trong Dockerfile, có thể dùng CMD để thực thi server hoặc client lúc khởi chạy container hoặc dùng ENTRYPOINT để thực thi script thực thi server và client lúc khởi chạy container mà không cần phải chờ terminal của container mới nhập lệnh thực thi.
-
+- Ở máy mình (host), có thể dùng script `run-multi-clients.sh` để mở nhiều client kết nối tới container chạy server.
 
 ## 3. Nguồn tham khảo
 

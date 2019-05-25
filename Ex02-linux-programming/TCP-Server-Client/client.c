@@ -4,8 +4,8 @@
  {
     arrClient.arr = (int *)malloc(sizeof(int)*1);
     int sockfd;
-    char buffer[1024];
-    char server_reply[1024];
+    char buffer[BUFFER_SIZE];
+    char server_reply[BUFFER_SIZE];
     int n;
   
     struct sockaddr_in servaddr; 
@@ -26,7 +26,7 @@
 
     char id[50];
     char filename[100];
-	if(recv(sockfd,id,1024,0 ) > 0)
+	if(recv(sockfd,id,BUFFER_SIZE,0 ) > 0)
     {
         if(strcmp(id,"Over clients")==0)
         {
@@ -37,6 +37,8 @@
 
         strcpy(filename,id);
         strcat(filename,"-client.txt");
+        FILE * f = fopen(filename, "w");
+        fclose(f);
     }
     else
     {
@@ -45,24 +47,25 @@
         return 1;
     }
     
-    int num=0, read_size=0;
+    int num=0;
     int count_request = 0;
 
     while (1)
     {
-        send(sockfd, "get",1024,0);
+        send(sockfd, "get",BUFFER_SIZE,0);
 
-        memset(server_reply, '\0', 1024);
-        if(recv(sockfd,server_reply,1024,0 ) <= 0)
+        memset(server_reply, '\0', BUFFER_SIZE);
+        if(recv(sockfd,server_reply,BUFFER_SIZE,0 ) <= 0)
         {
             puts("Error get data");
             break;
         }
         
+        printf("Server Reply: %s\n",server_reply);
         if(strcmp(server_reply,"full")==0)
         {
             printf("\nCount request: %d\n",count_request);
-            //send file from client
+
             sendFile(filename,sockfd);
 
             char filerank[100];
@@ -89,7 +92,6 @@
         
         count_request++;
         num=atoi(server_reply);
-        //printf("Server Reply: %d - count %d\n",num, count_request );
         writeFile(filename,num);
     }
 
