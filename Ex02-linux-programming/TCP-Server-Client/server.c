@@ -119,6 +119,7 @@ void *server_handler (void *fd_pointer)
         printf("1 client is aborted because of over client!\n");
         send(sock,"Over clients",BUFFER_SIZE,0);
         pthread_mutex_lock(&lock);
+        set_client_die(code);
         countClients--;
         pthread_mutex_unlock(&lock);
     }

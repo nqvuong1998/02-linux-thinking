@@ -629,63 +629,55 @@ For each directory that is listed, preface the files with a line `total BLOCKS',
 
 - Mỗi kết nối là 1 thread
 
-- Server sẽ khởi tạo 1 mảng giá trị [1-100] với kích thước random (10-1000)
+- Server sẽ khởi tạo 1 mảng giá trị trong đoạn [100-10000] với kích thước random trong đoạn [100-1000]
 
-- 2 < clients < 10
+- Số lượng client trong khoảng (2-10)
 
-- Sẽ có 1 mảng client_info để lưu thông tin: isActive (client đó còn kết nối không), sum (tổng giá trị mà client gửi về server), isSendFile (client đã gửi file lên chưa)
+- Sẽ có 1 mảng ClientInfo để lưu thông tin: isActive (client đó còn kết nối không), sum (tổng giá trị mà client gửi về server), thread (biết được thread mà nó đang xử lý) và socket (biết được socket của nó)
 
 - Sẽ có 1 biến countClients để đếm các client đang kết nối tới server
+
+- Tạo 1 thread chuyên để tính xếp hạng các client, thread này chờ mảng bị lấy hết phần tử rồi tiến hành join với các thread xử lý các client, chờ tất cả thread xử lý các client xong thì tiến hành xếp hạng và gửi file xếp hạng về mỗi client qua socket
 
 - Mỗi thread là 1 kết nối của client sẽ thực hiện các công việc sau:
 
     - Vào mutex lock, tiến hành đăng ký `ID` cho mình từ mảng client_info, `ID` tương ứng với index của mảng này; biến countCLients tăng 1
 
-    - Kiểm tra số client có vượt quá giới hạn hay không, nếu có gửi về thông điệp Over cho client; biến countClients giảm 1
+    - Kiểm tra số client có vượt quá giới hạn hay không, nếu có gửi về thông điệp `Over clients` cho client; biến countClients giảm 1
 
-    - Ngược lại, server tiến hành gửi ID về cho client biết
+    - Ngược lại, server tiến hành gửi `ID` về cho client biết
 
     - 1 vòng lặp nhận thông điệp được mở ra:
 
-        - Cần lưu ý giới hạng của số client
-        
-        - Nếu thông điệp là get: nó gửi lấy phần tử từ mảng gửi về cho client (đặt trong mutex lock)
+        - Nếu thông điệp không phải `get` thì bỏ qua
 
-        - Nếu thông điệp là auto: nó liên tục lấy phần tử từ mảng và gửi về cho client (deplay 0.5s và đặt tren mutex lock)
+        - Ngược lại, tiến hành truy cập mảng (dùng mutex lock) để lấy và gửi phần tử trong mảng cho client
 
-        - Nếu thông điệp khác những cái trên thì server sẽ ???
+        - Khi mảng hết phần tử, tiến hành nhận file data mà client gửi đến
 
-        - Đến 1 lúc nào đó, mảng full (không thể gửi phần tử nữa): server mở nhận thông điệp tên file và nhận cả file từ client
+        - Tính tổng giá trị trong file data
 
-        - Nhận file xong thì set giá trị isSendFile tại client ID lên true
+        - Thoát thread
 
-        - Tính tổng giá trị trong gile
+        - Cần lưu ý giới hạn số client
 
-        - 1 vòng lặp để chờ tất cả các client gửi file lên hết
-
-        - Tiến hành xếp hạng và gửi file về cho client
-
-    - Khi không nhận được thông điệp hoặc nhận fail thì mở mutex lock để cập nhập tình trạng và số lượng client
+    - Khi không nhận được thông điệp hoặc nhận fail thì mở mutex lock để cập nhập tình trạng và số lượng client, thoát thread
 
 **Phía Client**
 
 - Tiến hành connect tới server
 
-- Thông điệp đầu tiên nó nhận được là ID hoặc thông báo Over. Nếu Over thì tắt
+- Thông điệp đầu tiên nó nhận được là `ID` hoặc thông báo Over. Nếu Over thì tắt
 
 - 1 vòng lặp mở ra
 
-    - Nhận input từ user
+    - Gửi thông điệp `get` cho server
 
-    - Nếu là get: tiến hành nhận thông điệp các phần tử của mảng từ server
+    - Khi đó client sẽ nhận được data từ server và ghi data đó vào file (file có sắp xếp tăng dần)
 
-    - Nếu là auto: 1 vòng lặp mở ra để liên tục nhận phần tử
+    - Đến một lúc nào đó, server hết phần tử, tiến hành gửi file data cho server
 
-    - Ghi giá trị phần tử vào file mỗi khi nhận (có thứ tự)
-
-    - Lưu ý giới hạn số lượng client
-
-    - Khi mà nhận được thông điệp full: tiến hành gửi tên file và nội dung file lên server. Sau đó nhận file xếp hạng từ server.
+    - Rồi thì client sẽ nhận được tổng kết xếp hạng của mình từ server
 
 ## 3. Nguồn tham khảo
 
