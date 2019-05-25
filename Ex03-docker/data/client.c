@@ -86,7 +86,6 @@
 
         if(strcmp(server_reply,"Not in range clients")==0)
         {
-            printf("%s\n",server_reply);
             continue;
         }
         

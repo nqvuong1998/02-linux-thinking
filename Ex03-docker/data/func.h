@@ -52,7 +52,7 @@ struct ClientInfo
 };
 
 extern pthread_mutex_t lock;
-extern struct ClientInfo clients[MAX_CLIENTS];
+extern struct ClientInfo clients[MAX_CLIENTS + 1];
 extern struct ArrServer arrServer;
 extern int countClients;
 extern struct ArrClient arrClient;

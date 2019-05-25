@@ -353,6 +353,7 @@ gnome-terminal --command="bash -c 'cd /media/vuongnguyen/DATA/STUDY/Fresher/02-l
 - `run-server.sh`: chạy Makefile và run server. Có thể chỉ compile bằng Makefile thôi, không cần run server, tái sử dụng để chạy client trên container luôn.
 
 ```
+make clean
 make all
 ./server.out
 ```

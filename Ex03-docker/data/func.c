@@ -1,7 +1,7 @@
 #include "func.h"
 
 pthread_mutex_t lock;
-struct ClientInfo clients[MAX_CLIENTS];
+struct ClientInfo clients[MAX_CLIENTS + 1];
 struct ArrServer arrServer = {NULL,0,0};
 int countClients = 0;
 struct ArrClient arrClient = {NULL,0};
