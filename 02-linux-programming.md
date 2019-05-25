@@ -45,8 +45,6 @@ File descriptors được sử dụng lần đầu tiên là trong Unix, và đ�
 
 Khi một process thực hiện một request để mở file thành công, kernel trả về một file descriptor trỏ tới một entry trong global file table trong kernel. File table entry bao gồm các thông tin như inode của file, byte offset và quyền truy cập cho data stream (read-only, write-only,...).
 
-![](https://www.computerhope.com/jargon/f/file-descriptor.jpg)
-
 Trên OS như Unix, mặc định 3 file desciptors là STDIN (standard input - 0), STDOUT (standard output - 1) và STDERR (standard error - 2).
 
 File desciptors có thể được truy cập trực tiếp bằng bash, shell của Linux, macOS X và Windows Subsystem for Linux (Win 10).
@@ -705,3 +703,4 @@ For each directory that is listed, preface the files with a line `total BLOCKS',
 
 - [Reader and Writer Problem](https://www.tutorialspoint.com/readers-writers-problem)
 
+- [Socket](https://www.bogotobogo.com/cplusplus/sockets_server_client.php)

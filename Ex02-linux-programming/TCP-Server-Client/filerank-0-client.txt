@@ -1,0 +1,3 @@
+Client ID : 1 - Sum: 733609 - Rank : 3
+Client ID : 2 - Sum: 3333121 - Rank : 1
+Client ID : 3 - Sum: 2995376 - Rank : 2

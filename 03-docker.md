@@ -391,6 +391,7 @@ Có thể thực thi client trên host để connect tới server container.
 
 - Trong Dockerfile, có thể dùng CMD để thực thi server hoặc client lúc khởi chạy container hoặc dùng ENTRYPOINT để thực thi script thực thi server và client lúc khởi chạy container mà không cần phải chờ terminal của container mới nhập lệnh thực thi.
 
+
 ## 3. Nguồn tham khảo
 
 - [Tìm hiểu Docker P1](https://viblo.asia/p/docker-chua-biet-gi-den-biet-dung-phan-1-lich-su-ByEZkWrEZQ0)

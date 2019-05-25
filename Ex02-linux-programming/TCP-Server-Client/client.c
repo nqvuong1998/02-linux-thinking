@@ -47,27 +47,34 @@ void sendFile(char * filename, int socket)
     }
 }
 
-void receiveFile(char * filename, int socket)
+bool receiveFile(char * filename, int socket)
 {
     char buffer[BUFSIZ];
-    recv(socket, buffer, BUFSIZ, 0);
+    memset( buffer, '\0', sizeof(char)*BUFSIZ );
+    if(recv(socket, buffer, BUFSIZ, 0) < 0)
+    {
+        return false;
+    }
     int file_size = atoi(buffer);
 
     FILE * f = fopen(filename, "w");
     if (f == NULL)
     {
         printf("Failed to open file foo --> %s\n", strerror(errno));
-        return;
+        return false;
     }
 
     int remain_data = file_size;
     ssize_t len;
-    while ((remain_data > 0) && ((len = recv(socket, buffer, BUFSIZ, 0)) > 0))
+    memset( buffer, '\0', sizeof(char)*BUFSIZ );
+    while ((remain_data > 0) && (len = recv(socket, buffer, BUFSIZ, 0) > 0))
     {
-        fwrite(buffer, sizeof(char), len, f);
-        remain_data -= len;
+        fwrite(buffer, sizeof(char), strlen(buffer), f);
+        remain_data -= strlen(buffer)*sizeof(char);
+        memset( buffer, '\0', sizeof(char)*BUFSIZ );
     }
     fclose(f);
+    return true;
 }
 
 void writeFile(char * filename, char * newname, int num)
@@ -89,38 +96,28 @@ void writeFile(char * filename, char * newname, int num)
     int len = ftell(f);
 
     fseek(f, 0L, SEEK_SET);
-    int count = 0;
     int value;
 
     if(len>0)
     {
-        while(fscanf(f,"%d-",&value) == 1)
+        bool flag = false;
+        while(fscanf(f,"%d\n",&value) == 1)
         {
-            if(value>=num)
+            if(value>=num && flag == false)
             {
-                break;
+                fprintf(tmp,"%d\n",num);
+                flag = true;
             }
-            count+=1;
+            fprintf(tmp,"%d\n",value);
         }
-        fseek(f, 0L, SEEK_SET);
-        fseek(tmp, 0L, SEEK_SET);
-        for(int i=0;i<count;i++)
-        {
-            fscanf(f,"%d-",&value);
-            fprintf(tmp,"%d-",value);
-        }
-        fprintf(tmp,"%d-",num);
-        while(fscanf(f,"%d-",&value) == 1)
-        {
-            fprintf(tmp,"%d-",value);
-        }
+        
         remove(filename);
         rename(newname,filename);
         remove(newname);
     }
     else
     {
-        fprintf(f,"%d-",num);
+        fprintf(f,"%d\n",num);
         remove(newname);
     }
     fclose(f);
@@ -151,9 +148,10 @@ void writeFile(char * filename, char * newname, int num)
    
     connect(sockfd, (struct sockaddr *)&servaddr,sizeof(servaddr));
 
-    char id[30];
+    char id[50];
     char newname[100];
-	if(recv(sockfd,id,1024,0 ) >= 0)
+    char filename[100];
+	if(recv(sockfd,id,1024,0 ) > 0)
     {
         if(strcmp(id,"Over clients")==0)
         {
@@ -161,92 +159,67 @@ void writeFile(char * filename, char * newname, int num)
             return 1;
         }
         printf("Client ID: %s\n",id);
-        strcat(id,".txt-client");
+
+        strcpy(filename,id);
+        strcat(filename,"-client.txt");
         
-        strcpy(newname,id);
-        strcat(newname, "-tmp");
-        remove(id);
-        FILE * f =fopen(id,"w");
+        strcpy(newname,filename);
+        strcat(newname, ".out");
+        remove(filename);
+        FILE * f =fopen(filename,"w");
         fclose(f);
     }
+    else
+    {
+        puts("Error");
+        return 1;
+    }
+    
+    int num=0, read_size=0;
+    int count_request = 0;
+
     while (1)
     {
-	    printf("Enter a Message: ");
-        scanf("%s",buffer);
-	
-        if (send(sockfd,buffer,strlen(buffer)+1,0) < 0)
-        {
-            printf("Error \n");
-            return 1;
-        }
-        int read_size;
-        int num;
-        if(strcmp(buffer,"auto")==0)
-        {
-            read_size=recv(sockfd,server_reply,1024,0 );
-            while (read_size > 0)
-            {
-                printf("Server Reply: %s \n",server_reply );
-                if(strcmp(server_reply,"full")==0)
-                {
-                    //send file from client
-                    send(sockfd,id,1024,0);
-                    sendFile(id,sockfd);
+        send(sockfd, "get",1024,0);
 
-                    receiveFile("filerank.txt-server-client", sockfd);
-
-                    printf("File Rank!\n");
-                    return 0;
-                    //break;
-                }
-                if(strcmp(server_reply,"Not in range clients")==0)
-                {
-                    break;
-                }
-                num=atoi(server_reply);
-                writeFile(id,newname,num);
-                read_size=recv(sockfd,server_reply,1024,0 );
-            }
-            
-        }
-        else if(strcmp(buffer,"get")==0)
+        memset(server_reply, '\0', 1024);
+        if(recv(sockfd,server_reply,1024,0 ) < 0)
         {
-            read_size=recv(sockfd,server_reply,1024,0 );
-            if(read_size < 0)
+            puts("Error");
+            break;
+        }
+        //printf("Server Reply: %s \n",server_reply );
+        if(strcmp(server_reply,"full")==0)
+        {
+            printf("\nCount request: %d\n",count_request);
+            //send file from client
+            sendFile(filename,sockfd);
+
+            char filerank[100];
+            strcpy(filerank,"filerank-");
+            strcat(filerank,id);
+            strcat(filerank,"-client.txt");
+            if(receiveFile(filerank, sockfd) == false)
             {
                 puts("Error");
                 break;
             }
-            printf("Server Reply: %s \n",server_reply );
-            if(strcmp(server_reply,"full")==0)
-            {
-                //send file from client
-                    send(sockfd,id,1024,0);
-                    sendFile(id,sockfd);
 
-                    receiveFile("filerank.txt", sockfd);
-
-                    printf("File Rank!\n");
-                    return 0;
-            }
-            else if(strcmp(server_reply,"Not in range clients")!=0)
-            {
-                    num=atoi(server_reply);
-                    writeFile(id,newname,num);
-            }
-            
+            printf("File Rank!\n");
+            return 0;
+            //break;
         }
-        else 
+
+        if(strcmp(server_reply,"Not in range clients")==0)
         {
-            if(recv(sockfd,server_reply,1024,0 ) < 0)
-            {
-                puts("Error");
-                break;
-            }
-            printf("Server Reply: %s \n",server_reply );
+            printf("%s\n",server_reply);
+            continue;
         }
-        
-   }
+        count_request++;
+        num=atoi(server_reply);
+        writeFile(filename,newname,num);
+    }
+
 	close(sockfd);
 	return 0;
 	 
