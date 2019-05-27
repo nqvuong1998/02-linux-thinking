@@ -482,8 +482,6 @@ GNU Debugger (GDB) là debugger phổ biến nhất cho UNIX system để debug 
 
 - Cài đặt GDB - `sudo apt-get install libc6-dbg gdb valgrind`
 
-Để GDB có thể đọc tất cả thông tin, ta cần compile chương trình, cách thông thường là: `gcc hello.cc -o hello`. Thay vì làm vậy, ta cần compile với `-g`: `gcc -g hello.cc -o hello`.
-
 - [GDB Commands](https://www.tutorialspoint.com/gnu_debugger/gdb_commands.htm)
 
 #### 2.1.2. makefile
