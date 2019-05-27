@@ -28,14 +28,21 @@ int main()
     {
 	   perror("Could not create Socket \n"); 
     }
-   
+
+    
+    
    puts("Socket Created");
    
    bzero(&servaddr,sizeof (servaddr));
+
+   /* Enable reuse address */
+   int on = 1;
+    setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    
    servaddr.sin_family = AF_INET;
    servaddr.sin_addr.s_addr = inet_addr(ADDRESS);
    servaddr.sin_port = htons(PORT);
-   
+
    if (bind(listenfd,(struct sockaddr *)&servaddr,sizeof(servaddr)) < 0)
    {
 	   perror("bind failed");
